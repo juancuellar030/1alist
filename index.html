@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Behavior Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .btn-x {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-x:hover {
+            background: #c0392b;
+        }
+
+        .btn-circle {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-circle:hover {
+            background: #e67e22;
+        }
+
+        .btn-delete {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-clear {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #8e44ad;
+        }
+
+        .active {
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
+            transform: scale(1.05);
+        }
+
+        .table-container {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        thead {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        th {
+            padding: 20px 15px;
+            text-align: center;
+            font-weight: 700;
+            color: white;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        th:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+        }
+
+        .student-name {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+            text-align: left !important;
+            min-width: 200px;
+            font-size: 18px;
+        }
+
+        tbody tr {
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background: #e3f2fd;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        tbody tr.warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%) !important;
+            border-left: 5px solid #f39c12;
+        }
+
+        tbody tr.warning:hover {
+            background: linear-gradient(135deg, #fff3cd 0%, #fdcb6e 100%) !important;
+        }
+
+        td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+            position: relative;
+        }
+
+        .student-name-cell {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2c3e50;
+            text-align: left !important;
+            background: rgba(52, 73, 94, 0.05);
+        }
+
+        .clickable-cell {
+            cursor: pointer;
+            min-width: 60px;
+            min-height: 60px;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            position: relative;
+            vertical-align: middle;
+        }
+
+        .clickable-cell:hover {
+            background: #e8f5e8;
+            transform: scale(1.1);
+        }
+
+        .clickable-cell.has-mark {
+            background: #f8f9fa;
+        }
+
+        .mark-x {
+            color: #e74c3c;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .mark-circle {
+            color: #f39c12;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .thursday-cell {
+            background: linear-gradient(135deg, #e8f5e8 0%, #d5f4e6 100%);
+            border-left: 3px solid #27ae60;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27ae60;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .warning .status-indicator {
+            background: #e74c3c;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .controls {
+                justify-content: center;
+            }
+
+            .table-container {
+                padding: 15px;
+            }
+
+            .btn {
+                padding: 10px 15px;
+                font-size: 12px;
+            }
+        }
+
+        .week-info {
+            background: #ecf0f1;
+            padding: 15px 30px;
+            border-bottom: 1px solid #bdc3c7;
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Student Behavior Tracker</h1>
+            <div class="controls">
+                <button class="btn btn-x" id="markX">✗ Mark X</button>
+                <button class="btn btn-circle" id="markCircle">● Mark O</button>
+                <button class="btn btn-delete" id="deleteMark">🗑 Delete Mark</button>
+                <button class="btn btn-clear" id="clearAll">🔄 Clear All</button>
+            </div>
+        </div>
+        
+        <div class="week-info" id="weekInfo">
+            Week of <span id="currentWeek"></span>
+        </div>
+
+        <div class="table-container">
+            <table id="behaviorTable">
+                <thead>
+                    <tr>
+                        <th class="student-name">Student Name</th>
+                        <th colspan="5">Monday (5 periods)</th>
+                        <th colspan="5">Wednesday (5 periods)</th>
+                        <th colspan="7">Thursday (7 periods)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Students will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Student list from the document
+        const students = [
+            'CELESTE DE LA HOZ',
+            'DAVID SANTIAGO',
+            'DULCE XCARET',
+            'EMILIO VARGAS',
+            'EMMANUEL M.',
+            'HELENA FRANCO',
+            'IKER JULIÁN',
+            'JERÓNIMO R.',
+            'JOSÉ DANIEL',
+            'JUAN DAVID G.',
+            'JUAN PABLO',
+            'LUNA CAROLINA',
+            'MARIA LUISA',
+            'MARIA V. HURTADO',
+            'MARIA V. PEÑA',
+            'MARTÍN TOVAR',
+            'SAMUEL MELO',
+            'SARA MARÍA',
+            'SARAY MORALES',
+            'VICTORIA CADENA',
+            'VIOLETA CASTAÑO'
+        ];
+
+        let currentMode = null;
+        let behaviorData = {};
+
+        // Initialize behavior data structure
+        function initializeBehaviorData() {
+            students.forEach(student => {
+                behaviorData[student] = {
+                    monday1: '',
+                    monday2: '',
+                    monday3: '',
+                    monday4: '',
+                    monday5: '',
+                    wednesday1: '',
+                    wednesday2: '',
+                    wednesday3: '',
+                    wednesday4: '',
+                    wednesday5: '',
+                    thursday1: '',
+                    thursday2: '',
+                    thursday3: '',
+                    thursday4: '',
+                    thursday5: '',
+                    thursday6: '',
+                    thursday7: ''
+                };
+            });
+        }
+
+        // Get current week date range
+        function getCurrentWeek() {
+            const today = new Date();
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+            
+            const friday = new Date(monday);
+            friday.setDate(monday.getDate() + 4);
+            
+            const options = { month: 'short', day: 'numeric' };
+            return `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
+        }
+
+        // Create table
+        function createTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="student-name-cell">${student}</td>
+                    <td class="clickable-cell" data-student="${student}" data-day="monday1"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="monday2"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="monday3"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="monday4"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="monday5"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="wednesday1"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="wednesday2"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="wednesday3"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="wednesday4"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="wednesday5"></td>
+                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday1"></td>
+                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday2"></td>
+                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday3"></td>
+                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday4"></td>
+                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday5"></td>
+                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday6"></td>
+                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday7"></td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Add click listeners to cells
+            document.querySelectorAll('.clickable-cell').forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
+            });
+        }
+
+        // Handle cell clicks
+        function handleCellClick(event) {
+            const cell = event.target;
+            const student = cell.dataset.student;
+            const day = cell.dataset.day;
+
+            if (!currentMode) return;
+
+            switch (currentMode) {
+                case 'x':
+                    behaviorData[student][day] = 'X';
+                    cell.textContent = '✗';
+                    cell.className = 'clickable-cell has-mark mark-x';
+                    break;
+                case 'circle':
+                    behaviorData[student][day] = 'O';
+                    cell.textContent = '●';
+                    cell.className = 'clickable-cell has-mark mark-circle';
+                    break;
+                case 'delete':
+                    behaviorData[student][day] = '';
+                    cell.textContent = '';
+                    cell.className = 'clickable-cell';
+                    if (cell.classList.contains('thursday-cell')) {
+                        cell.classList.add('thursday-cell');
+                    }
+                    break;
+            }
+
+            updateRowStatus(student);
+            clearMode();
+        }
+
+        // Update row status based on marks
+        function updateRowStatus(student) {
+            const row = document.querySelector(`[data-student="${student}"]`).closest('tr');
+            const marks = Object.values(behaviorData[student]).filter(mark => mark !== '');
+            
+            if (marks.length > 2) {
+                row.classList.add('warning');
+            } else {
+                row.classList.remove('warning');
+            }
+        }
+
+        // Set mode
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(getButtonId(mode)).classList.add('active');
+        }
+
+        // Clear mode
+        function clearMode() {
+            currentMode = null;
+            document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+        }
+
+        // Get button ID from mode
+        function getButtonId(mode) {
+            switch (mode) {
+                case 'x': return 'markX';
+                case 'circle': return 'markCircle';
+                case 'delete': return 'deleteMark';
+                default: return '';
+            }
+        }
+
+        // Clear all marks
+        function clearAllMarks() {
+            if (confirm('Are you sure you want to clear all marks for the week?')) {
+                initializeBehaviorData();
+                document.querySelectorAll('.clickable-cell').forEach(cell => {
+                    cell.textContent = '';
+                    cell.className = 'clickable-cell';
+                    if (cell.classList.contains('thursday-cell')) {
+                        cell.classList.add('thursday-cell');
+                    }
+                });
+                document.querySelectorAll('tbody tr').forEach(row => {
+                    row.classList.remove('warning');
+                });
+            }
+        }
+
+        // Event listeners
+        document.getElementById('markX').addEventListener('click', () => setMode('x'));
+        document.getElementById('markCircle').addEventListener('click', () => setMode('circle'));
+        document.getElementById('deleteMark').addEventListener('click', () => setMode('delete'));
+        document.getElementById('clearAll').addEventListener('click', clearAllMarks);
+
+        // Initialize
+        document.getElementById('currentWeek').textContent = getCurrentWeek();
+        initializeBehaviorData();
+        createTable();
+
+        // Clear mode when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.controls') && !e.target.closest('.clickable-cell')) {
+                clearMode();
+            }
+        });
+    </script>
+</body>
+</html>
