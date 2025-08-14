@@ -227,9 +227,17 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .thursday-cell {
-            background: linear-gradient(135deg, #e8f5e8 0%, #d5f4e6 100%);
-            border-left: 3px solid #27ae60;
+        .clickable-cell {
+            border-right: 1px solid #dee2e6;
+        }
+
+        /* Thicker borders between day sections */
+        .clickable-cell[data-day="monday5"] {
+            border-right: 3px solid #95a5a6;
+        }
+
+        .clickable-cell[data-day="wednesday5"] {
+            border-right: 3px solid #95a5a6;
         }
 
         .status-indicator {
@@ -442,9 +450,6 @@
                     behaviorData[student][day] = '';
                     cell.textContent = '';
                     cell.className = 'clickable-cell';
-                    if (cell.classList.contains('thursday-cell')) {
-                        cell.classList.add('thursday-cell');
-                    }
                     break;
             }
 
@@ -473,8 +478,11 @@
 
         // Clear mode
         function clearMode() {
-            currentMode = null;
-            document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+            // Only clear mode for delete action, keep marking modes active
+            if (currentMode === 'delete') {
+                currentMode = null;
+                document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+            }
         }
 
         // Get button ID from mode
@@ -494,9 +502,6 @@
                 document.querySelectorAll('.clickable-cell').forEach(cell => {
                     cell.textContent = '';
                     cell.className = 'clickable-cell';
-                    if (cell.classList.contains('thursday-cell')) {
-                        cell.classList.add('thursday-cell');
-                    }
                 });
                 document.querySelectorAll('tbody tr').forEach(row => {
                     row.classList.remove('warning');
