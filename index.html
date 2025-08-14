@@ -108,6 +108,24 @@
             background: #8e44ad;
         }
 
+        .btn-save {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #229954;
+        }
+
+        .btn-load {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-load:hover {
+            background: #2980b9;
+        }
+
         .active {
             box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
             transform: scale(1.05);
@@ -296,10 +314,13 @@
         <div class="header">
             <h1>📚 Student Behavior Tracker</h1>
             <div class="controls">
-                <button class="btn btn-x" id="markX">Mark X</button>
+                <button class="btn btn-x" id="markX">✗ Mark X</button>
                 <button class="btn btn-circle" id="markCircle">Mark O</button>
                 <button class="btn btn-delete" id="deleteMark">Delete Mark</button>
                 <button class="btn btn-clear" id="clearAll">Clear All</button>
+                <button class="btn btn-save" id="saveData">💾 Save Data</button>
+                <button class="btn btn-load" id="loadData">📂 Load Data</button>
+                <input type="file" id="fileInput" accept=".json" style="display: none;">
             </div>
         </div>
         
@@ -533,6 +554,109 @@
                     row.classList.remove('warning');
                 });
             }
+        }
+
+        // Save data to JSON file
+        function saveData() {
+            const currentWeek = getCurrentWeek();
+            const dataToSave = {
+                week: currentWeek,
+                savedDate: new Date().toISOString(),
+                behaviorData: behaviorData
+            };
+            
+            const dataStr = JSON.stringify(dataToSave, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `student-behavior-${currentWeek.replace(/[^a-zA-Z0-9]/g, '-')}.json`;
+            link.click();
+            
+            // Show confirmation
+            const saveBtn = document.getElementById('saveData');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = '✅ Saved!';
+            saveBtn.style.background = '#27ae60';
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.style.background = '';
+            }, 2000);
+        }
+
+        // Load data from JSON file
+        function loadData() {
+            document.getElementById('fileInput').click();
+        }
+
+        // Handle file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+                    
+                    if (loadedData.behaviorData && loadedData.week) {
+                        // Confirm loading
+                        const confirmLoad = confirm(
+                            `Load data from ${loadedData.week}?\n` +
+                            `Saved on: ${new Date(loadedData.savedDate).toLocaleDateString()}\n\n` +
+                            'This will replace current marks.'
+                        );
+                        
+                        if (confirmLoad) {
+                            behaviorData = loadedData.behaviorData;
+                            updateTableDisplay();
+                            
+                            // Show confirmation
+                            const loadBtn = document.getElementById('loadData');
+                            const originalText = loadBtn.textContent;
+                            loadBtn.textContent = '✅ Loaded!';
+                            loadBtn.style.background = '#3498db';
+                            setTimeout(() => {
+                                loadBtn.textContent = originalText;
+                                loadBtn.style.background = '';
+                            }, 2000);
+                        }
+                    } else {
+                        alert('Invalid file format. Please select a valid behavior data file.');
+                    }
+                } catch (error) {
+                    alert('Error reading file. Please make sure it\'s a valid JSON file.');
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            event.target.value = '';
+        }
+
+        // Update table display with loaded data
+        function updateTableDisplay() {
+            document.querySelectorAll('.clickable-cell').forEach(cell => {
+                const student = cell.dataset.student;
+                const day = cell.dataset.day;
+                const mark = behaviorData[student][day];
+                
+                cell.textContent = '';
+                cell.className = 'clickable-cell';
+                
+                if (mark === 'X') {
+                    cell.textContent = '✗';
+                    cell.className = 'clickable-cell has-mark mark-x';
+                } else if (mark === 'O') {
+                    cell.textContent = '●';
+                    cell.className = 'clickable-cell has-mark mark-circle';
+                }
+            });
+            
+            // Update row warnings
+            students.forEach(student => {
+                updateRowStatus(student);
+            });
         }
 
         // Event listeners
