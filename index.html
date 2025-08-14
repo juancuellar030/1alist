@@ -404,6 +404,7 @@
 
     <script>
         // ⚠️ REPLACE THIS WITH YOUR ACTUAL GOOGLE SHEETS WEB APP URL
+        // ONLY CHANGE THIS ONE LINE BELOW:
         const SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec';
         
         // Student list
@@ -750,7 +751,7 @@
         async function testSheetsConnection() {
             debugLog('Testing Google Sheets connection...');
             try {
-                const response = await fetch(https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec, {
+                const response = await fetch(SHEETS_WEB_APP_URL, {
                     method: 'GET',
                     mode: 'cors'
                 });
@@ -776,7 +777,7 @@
                 debugLog('Connection test error details', {
                     message: error.message,
                     stack: error.stack,
-                    url: https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec
+                    url: SHEETS_WEB_APP_URL
                 });
                 return false;
             }
@@ -786,7 +787,7 @@
         async function syncToSheets() {
             debugLog('Sync to Sheets button clicked');
             
-            if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL.includes('https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec')) {
+            if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL.includes('YOUR_WEB_APP_URL_HERE')) {
                 showError('Please configure your Google Sheets Web App URL first! Check the console for setup instructions.');
                 console.log(`
 🔧 GOOGLE SHEETS SETUP REQUIRED:
@@ -820,11 +821,11 @@ Then try syncing again!
                 };
 
                 debugLog('Sending request to Google Sheets', {
-                    url: https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec,
+                    url: SHEETS_WEB_APP_URL,
                     dataSize: JSON.stringify(dataToSync).length
                 });
 
-                const response = await fetch(https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec, {
+                const response = await fetch(SHEETS_WEB_APP_URL, {
                     method: 'POST',
                     mode: 'cors',
                     headers: {
@@ -871,7 +872,7 @@ Then try syncing again!
         async function loadFromSheets() {
             debugLog('Load from Sheets button clicked');
             
-            if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL.includes('https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec')) {
+            if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL.includes('YOUR_WEB_APP_URL_HERE')) {
                 showError('Please configure your Google Sheets Web App URL first!');
                 return;
             }
@@ -890,7 +891,7 @@ Then try syncing again!
 
                 debugLog('Sending load request to Google Sheets');
 
-                const response = await fetch(https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec, {
+                const response = await fetch(SHEETS_WEB_APP_URL, {
                     method: 'POST',
                     mode: 'cors',
                     headers: {
@@ -962,7 +963,7 @@ Then try syncing again!
             debugLog('Initialization complete');
             
             // Test connection on load if URL is configured
-            if (SHEETS_WEB_APP_URL && !SHEETS_WEB_APP_URL.includes('https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec')) {
+            if (SHEETS_WEB_APP_URL && !SHEETS_WEB_APP_URL.includes('YOUR_WEB_APP_URL_HERE')) {
                 setTimeout(testSheetsConnection, 1000);
             }
         }
