@@ -391,6 +391,32 @@
             return `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
         }
 
+        // Update week display
+        function updateWeekDisplay() {
+            document.getElementById('currentWeek').textContent = getCurrentWeek();
+        }
+
+        // Check if it's a new week and update display
+        function checkAndUpdateWeek() {
+            const currentWeekText = getCurrentWeek();
+            const displayedWeek = document.getElementById('currentWeek').textContent;
+            
+            if (currentWeekText !== displayedWeek) {
+                updateWeekDisplay();
+                // Optionally prompt to clear data for new week
+                if (confirm('It\'s a new week! Would you like to clear all marks and start fresh?')) {
+                    initializeBehaviorData();
+                    document.querySelectorAll('.clickable-cell').forEach(cell => {
+                        cell.textContent = '';
+                        cell.className = 'clickable-cell';
+                    });
+                    document.querySelectorAll('tbody tr').forEach(row => {
+                        row.classList.remove('warning');
+                    });
+                }
+            }
+        }
+
         // Create table
         function createTable() {
             const tableBody = document.getElementById('tableBody');
@@ -519,6 +545,16 @@
         document.getElementById('currentWeek').textContent = getCurrentWeek();
         initializeBehaviorData();
         createTable();
+
+        // Check for week changes every hour
+        setInterval(checkAndUpdateWeek, 60 * 60 * 1000);
+
+        // Also check when the page becomes visible again (user returns to tab)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                checkAndUpdateWeek();
+            }
+        });
 
         // Clear mode when clicking outside
         document.addEventListener('click', (e) => {
