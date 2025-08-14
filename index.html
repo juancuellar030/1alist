@@ -422,7 +422,7 @@
         let behaviorData = {};
         
         // Google Sheets configuration
-        const SHEETS_WEB_APP_URL = 'YOUR_WEB_APP_URL_HERE'; // Replace with your actual URL
+        const SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec'; // Replace with your actual URL
 
         // Initialize behavior data structure
         function initializeBehaviorData() {
@@ -757,7 +757,7 @@
 
         // Sync data to Google Sheets
         async function syncToSheets() {
-            if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL === 'YOUR_WEB_APP_URL_HERE') {
+            if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec') {
                 alert('Please configure your Google Sheets Web App URL first!\n\nSee the setup instructions in the console.');
                 console.log(`
 🔧 GOOGLE SHEETS SETUP REQUIRED:
