@@ -405,7 +405,7 @@
     <script>
         // ⚠️ REPLACE THIS WITH YOUR ACTUAL GOOGLE SHEETS WEB APP URL
         // ONLY CHANGE THIS ONE LINE BELOW:
-        const SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec';
+        const SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxGrp-Vr9C407U9uh7k_4G_Y3HeAyvF3WQEAGWAdRCClWNMagTzM3NOyV_zxGAJc7adeQ/exec';
         
         // Student list
         const students = [
@@ -825,13 +825,13 @@ Then try syncing again!
                     dataSize: JSON.stringify(dataToSync).length
                 });
 
-                const response = await fetch(SHEETS_WEB_APP_URL, {
+               const response = await fetch(SHEETS_WEB_APP_URL, {
                     method: 'POST',
-                    mode: 'cors',
+                    redirect: 'follow', // Important for handling Google's redirect
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'text/plain;charset=utf-8', // Changed to avoid pre-flight
                     },
-                    body: JSON.stringify(dataToSync)
+                    body: JSON.stringify(dataToSync) // The body is still a JSON string
                 });
 
                 debugLog('Response received', {
