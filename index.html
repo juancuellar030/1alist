@@ -126,6 +126,15 @@
             background: #2980b9;
         }
 
+        .btn-sync {
+            background: #8e44ad;
+            color: white;
+        }
+
+        .btn-sync:hover {
+            background: #9b59b6;
+        }
+
         .active {
             box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
             transform: scale(1.05);
@@ -191,13 +200,42 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        tbody tr.warning {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%) !important;
-            border-left: 5px solid #f39c12;
+        /* Color-coded row states based on mark count */
+        tbody tr.status-clean {
+            background: linear-gradient(135deg, #d5f4e6 0%, #a8e6cf 100%) !important;
+            border-left: 4px solid #27ae60;
         }
 
-        tbody tr.warning:hover {
-            background: linear-gradient(135deg, #fff3cd 0%, #fdcb6e 100%) !important;
+        tbody tr.status-clean:hover {
+            background: linear-gradient(135deg, #c8f2dd 0%, #9de1c4 100%) !important;
+        }
+
+        tbody tr.status-warning {
+            background: linear-gradient(135deg, #fff9c4 0%, #f7dc6f 100%) !important;
+            border-left: 4px solid #f1c40f;
+        }
+
+        tbody tr.status-warning:hover {
+            background: linear-gradient(135deg, #fff5b4 0%, #f4d03f 100%) !important;
+        }
+
+        tbody tr.status-alert {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%) !important;
+            border-left: 4px solid #f39c12;
+        }
+
+        tbody tr.status-alert:hover {
+            background: linear-gradient(135deg, #ffe69c 0%, #fab957 100%) !important;
+        }
+
+        tbody tr.status-danger {
+            background: linear-gradient(135deg, #ffcccc 0%, #ff9999 100%) !important;
+            border-left: 4px solid #e74c3c;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+        }
+
+        tbody tr.status-danger:hover {
+            background: linear-gradient(135deg, #ffbfbf 0%, #ff8080 100%) !important;
         }
 
         td {
@@ -320,12 +358,21 @@
                 <button class="btn btn-clear" id="clearAll">🔄 Clear All</button>
                 <button class="btn btn-save" id="saveData">💾 Save Data</button>
                 <button class="btn btn-load" id="loadData">📂 Load Data</button>
+                <button class="btn btn-sync" id="syncToSheets">☁️ Sync to Sheets</button>
+                <button class="btn btn-sync" id="loadFromSheets">📥 Load from Sheets</button>
                 <input type="file" id="fileInput" accept=".json" style="display: none;">
             </div>
         </div>
         
         <div class="week-info" id="weekInfo">
             Week of <span id="currentWeek"></span>
+            <div style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
+                <strong>📊 Status Legend:</strong> 
+                <span style="background: #d5f4e6; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟢 Clean (0 marks)</span>
+                <span style="background: #fff9c4; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟡 Warning (1 mark)</span>
+                <span style="background: #ffeaa7; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟠 Alert (2 marks)</span>
+                <span style="background: #ffcccc; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🔴 Danger (3+ marks)</span>
+            </div>
         </div>
 
         <div class="table-container">
@@ -373,6 +420,9 @@
 
         let currentMode = null;
         let behaviorData = {};
+        
+        // Google Sheets configuration
+        const SHEETS_WEB_APP_URL = 'YOUR_WEB_APP_URL_HERE'; // Replace with your actual URL
 
         // Initialize behavior data structure
         function initializeBehaviorData() {
@@ -508,11 +558,20 @@
         function updateRowStatus(student) {
             const row = document.querySelector(`[data-student="${student}"]`).closest('tr');
             const marks = Object.values(behaviorData[student]).filter(mark => mark !== '');
+            const markCount = marks.length;
             
-            if (marks.length > 2) {
-                row.classList.add('warning');
-            } else {
-                row.classList.remove('warning');
+            // Remove all status classes
+            row.classList.remove('status-clean', 'status-warning', 'status-alert', 'status-danger');
+            
+            // Apply appropriate status class based on mark count
+            if (markCount === 0) {
+                row.classList.add('status-clean');
+            } else if (markCount === 1) {
+                row.classList.add('status-warning');
+            } else if (markCount === 2) {
+                row.classList.add('status-alert');
+            } else if (markCount >= 3) {
+                row.classList.add('status-danger');
             }
         }
 
@@ -551,7 +610,8 @@
                     cell.className = 'clickable-cell';
                 });
                 document.querySelectorAll('tbody tr').forEach(row => {
-                    row.classList.remove('warning');
+                    row.className = '';
+                    row.classList.add('status-clean');
                 });
             }
         }
@@ -695,6 +755,127 @@
             });
         }
 
+        // Sync data to Google Sheets
+        async function syncToSheets() {
+            if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL === 'YOUR_WEB_APP_URL_HERE') {
+                alert('Please configure your Google Sheets Web App URL first!\n\nSee the setup instructions in the console.');
+                console.log(`
+🔧 GOOGLE SHEETS SETUP REQUIRED:
+
+1. Create a Google Sheet with your behavior data
+2. Go to Extensions → Apps Script
+3. Paste the provided script code
+4. Deploy as Web App
+5. Copy the Web App URL
+6. Replace 'YOUR_WEB_APP_URL_HERE' in the code with your actual URL
+
+Then try syncing again!
+                `);
+                return;
+            }
+
+            try {
+                const syncBtn = document.getElementById('syncToSheets');
+                syncBtn.textContent = '⏳ Syncing...';
+                syncBtn.disabled = true;
+
+                const dataToSync = {
+                    action: 'save',
+                    week: getCurrentWeek(),
+                    behaviorData: behaviorData,
+                    timestamp: new Date().toISOString()
+                };
+
+                const response = await fetch(SHEETS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(dataToSync)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    syncBtn.textContent = '✅ Synced!';
+                    syncBtn.style.background = '#27ae60';
+                    setTimeout(() => {
+                        syncBtn.textContent = '☁️ Sync to Sheets';
+                        syncBtn.style.background = '';
+                        syncBtn.disabled = false;
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+                alert('Error syncing to Google Sheets. Check console for details.');
+                const syncBtn = document.getElementById('syncToSheets');
+                syncBtn.textContent = '☁️ Sync to Sheets';
+                syncBtn.disabled = false;
+            }
+        }
+
+        // Load data from Google Sheets
+        async function loadFromSheets() {
+            if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL === 'https://script.google.com/macros/s/AKfycbwwOmCxyOC1ndRsdE5rNnJpRtiWW-nwKGiSyF3bPvJTSVV60LYpZd92Zj1QCNxMUcbj/exec') {
+                alert('Please configure your Google Sheets Web App URL first!');
+                return;
+            }
+
+            try {
+                const loadBtn = document.getElementById('loadFromSheets');
+                loadBtn.textContent = '⏳ Loading...';
+                loadBtn.disabled = true;
+
+                const dataToSend = {
+                    action: 'load',
+                    week: getCurrentWeek()
+                };
+
+                const response = await fetch(SHEETS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(dataToSend)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    const confirmLoad = confirm(
+                        `Load data from Google Sheets for ${result.week}?\n\n` +
+                        'This will replace current marks.'
+                    );
+                    
+                    if (confirmLoad) {
+                        behaviorData = result.behaviorData;
+                        updateTableDisplay();
+                        
+                        loadBtn.textContent = '✅ Loaded!';
+                        loadBtn.style.background = '#3498db';
+                        setTimeout(() => {
+                            loadBtn.textContent = '📥 Load from Sheets';
+                            loadBtn.style.background = '';
+                            loadBtn.disabled = false;
+                        }, 2000);
+                    } else {
+                        loadBtn.textContent = '📥 Load from Sheets';
+                        loadBtn.disabled = false;
+                    }
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Load error:', error);
+                alert('Error loading from Google Sheets. Check console for details.');
+                const loadBtn = document.getElementById('loadFromSheets');
+                loadBtn.textContent = '📥 Load from Sheets';
+                loadBtn.disabled = false;
+            }
+        }
+
         // Initialize
         document.getElementById('currentWeek').textContent = getCurrentWeek();
         initializeBehaviorData();
@@ -707,6 +888,8 @@
         document.getElementById('clearAll').addEventListener('click', clearAllMarks);
         document.getElementById('saveData').addEventListener('click', saveData);
         document.getElementById('loadData').addEventListener('click', loadData);
+        document.getElementById('syncToSheets').addEventListener('click', syncToSheets);
+        document.getElementById('loadFromSheets').addEventListener('click', loadFromSheets);
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
 
         // Check for week changes every hour
