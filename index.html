@@ -315,9 +315,9 @@
             <h1>📚 Student Behavior Tracker</h1>
             <div class="controls">
                 <button class="btn btn-x" id="markX">✗ Mark X</button>
-                <button class="btn btn-circle" id="markCircle">Mark O</button>
-                <button class="btn btn-delete" id="deleteMark">Delete Mark</button>
-                <button class="btn btn-clear" id="clearAll">Clear All</button>
+                <button class="btn btn-circle" id="markCircle">● Mark O</button>
+                <button class="btn btn-delete" id="deleteMark">🗑 Delete Mark</button>
+                <button class="btn btn-clear" id="clearAll">🔄 Clear All</button>
                 <button class="btn btn-save" id="saveData">💾 Save Data</button>
                 <button class="btn btn-load" id="loadData">📂 Load Data</button>
                 <input type="file" id="fileInput" accept=".json" style="display: none;">
@@ -333,9 +333,9 @@
                 <thead>
                     <tr>
                         <th class="student-name">Student Name</th>
-                        <th colspan="5">Monday</th>
-                        <th colspan="5">Wednesday</th>
-                        <th colspan="7">Thursday</th>
+                        <th colspan="5">Monday (5 periods)</th>
+                        <th colspan="5">Wednesday (5 periods)</th>
+                        <th colspan="7">Thursday (7 periods)</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -558,77 +558,113 @@
 
         // Save data to JSON file
         function saveData() {
-            const currentWeek = getCurrentWeek();
-            const dataToSave = {
-                week: currentWeek,
-                savedDate: new Date().toISOString(),
-                behaviorData: behaviorData
-            };
-            
-            const dataStr = JSON.stringify(dataToSave, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `student-behavior-${currentWeek.replace(/[^a-zA-Z0-9]/g, '-')}.json`;
-            link.click();
-            
-            // Show confirmation
-            const saveBtn = document.getElementById('saveData');
-            const originalText = saveBtn.textContent;
-            saveBtn.textContent = '✅ Saved!';
-            saveBtn.style.background = '#27ae60';
-            setTimeout(() => {
-                saveBtn.textContent = originalText;
-                saveBtn.style.background = '';
-            }, 2000);
+            console.log('Save button clicked');
+            try {
+                const currentWeek = getCurrentWeek();
+                const dataToSave = {
+                    week: currentWeek,
+                    savedDate: new Date().toISOString(),
+                    behaviorData: behaviorData
+                };
+                
+                const dataStr = JSON.stringify(dataToSave, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `student-behavior-${currentWeek.replace(/[^a-zA-Z0-9]/g, '-')}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Show confirmation
+                const saveBtn = document.getElementById('saveData');
+                const originalText = saveBtn.textContent;
+                saveBtn.textContent = '✅ Saved!';
+                saveBtn.style.background = '#27ae60';
+                setTimeout(() => {
+                    saveBtn.textContent = originalText;
+                    saveBtn.style.background = '';
+                }, 2000);
+                
+                console.log('Save completed successfully');
+            } catch (error) {
+                console.error('Error saving data:', error);
+                alert('Error saving data. Please try again.');
+            }
         }
 
         // Load data from JSON file
         function loadData() {
-            document.getElementById('fileInput').click();
+            console.log('Load button clicked');
+            try {
+                const fileInput = document.getElementById('fileInput');
+                fileInput.click();
+                console.log('File input triggered');
+            } catch (error) {
+                console.error('Error triggering file input:', error);
+                alert('Error opening file picker. Please try again.');
+            }
         }
 
         // Handle file selection
         function handleFileSelect(event) {
+            console.log('File selected:', event.target.files[0]);
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) {
+                console.log('No file selected');
+                return;
+            }
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const loadedData = JSON.parse(e.target.result);
-                    
-                    if (loadedData.behaviorData && loadedData.week) {
-                        // Confirm loading
-                        const confirmLoad = confirm(
-                            `Load data from ${loadedData.week}?\n` +
-                            `Saved on: ${new Date(loadedData.savedDate).toLocaleDateString()}\n\n` +
-                            'This will replace current marks.'
-                        );
+            try {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    console.log('File read successfully');
+                    try {
+                        const loadedData = JSON.parse(e.target.result);
+                        console.log('Data parsed:', loadedData);
                         
-                        if (confirmLoad) {
-                            behaviorData = loadedData.behaviorData;
-                            updateTableDisplay();
+                        if (loadedData.behaviorData && loadedData.week) {
+                            // Confirm loading
+                            const confirmLoad = confirm(
+                                `Load data from ${loadedData.week}?\n` +
+                                `Saved on: ${new Date(loadedData.savedDate).toLocaleDateString()}\n\n` +
+                                'This will replace current marks.'
+                            );
                             
-                            // Show confirmation
-                            const loadBtn = document.getElementById('loadData');
-                            const originalText = loadBtn.textContent;
-                            loadBtn.textContent = '✅ Loaded!';
-                            loadBtn.style.background = '#3498db';
-                            setTimeout(() => {
-                                loadBtn.textContent = originalText;
-                                loadBtn.style.background = '';
-                            }, 2000);
+                            if (confirmLoad) {
+                                behaviorData = loadedData.behaviorData;
+                                updateTableDisplay();
+                                
+                                // Show confirmation
+                                const loadBtn = document.getElementById('loadData');
+                                const originalText = loadBtn.textContent;
+                                loadBtn.textContent = '✅ Loaded!';
+                                loadBtn.style.background = '#3498db';
+                                setTimeout(() => {
+                                    loadBtn.textContent = originalText;
+                                    loadBtn.style.background = '';
+                                }, 2000);
+                                
+                                console.log('Data loaded successfully');
+                            }
+                        } else {
+                            alert('Invalid file format. Please select a valid behavior data file.');
                         }
-                    } else {
-                        alert('Invalid file format. Please select a valid behavior data file.');
+                    } catch (parseError) {
+                        console.error('Parse error:', parseError);
+                        alert('Error reading file. Please make sure it\'s a valid JSON file.');
                     }
-                } catch (error) {
-                    alert('Error reading file. Please make sure it\'s a valid JSON file.');
-                }
-            };
-            reader.readAsText(file);
+                };
+                reader.onerror = function(error) {
+                    console.error('File read error:', error);
+                    alert('Error reading file. Please try again.');
+                };
+                reader.readAsText(file);
+            } catch (error) {
+                console.error('Error handling file:', error);
+                alert('Error processing file. Please try again.');
+            }
             
             // Reset file input
             event.target.value = '';
@@ -659,16 +695,19 @@
             });
         }
 
-        // Event listeners
-        document.getElementById('markX').addEventListener('click', () => setMode('x'));
-        document.getElementById('markCircle').addEventListener('click', () => setMode('circle'));
-        document.getElementById('deleteMark').addEventListener('click', () => setMode('delete'));
-        document.getElementById('clearAll').addEventListener('click', clearAllMarks);
-
         // Initialize
         document.getElementById('currentWeek').textContent = getCurrentWeek();
         initializeBehaviorData();
         createTable();
+
+        // Event listeners (attach after DOM is ready)
+        document.getElementById('markX').addEventListener('click', () => setMode('x'));
+        document.getElementById('markCircle').addEventListener('click', () => setMode('circle'));
+        document.getElementById('deleteMark').addEventListener('click', () => setMode('delete'));
+        document.getElementById('clearAll').addEventListener('click', clearAllMarks);
+        document.getElementById('saveData').addEventListener('click', saveData);
+        document.getElementById('loadData').addEventListener('click', loadData);
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
 
         // Check for week changes every hour
         setInterval(checkAndUpdateWeek, 60 * 60 * 1000);
@@ -683,7 +722,10 @@
         // Clear mode when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.controls') && !e.target.closest('.clickable-cell')) {
-                clearMode();
+                if (currentMode === 'delete') {
+                    currentMode = null;
+                    document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+                }
             }
         });
     </script>
