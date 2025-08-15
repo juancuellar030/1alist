@@ -78,15 +78,6 @@
             transform: none;
         }
 
-        .btn-x {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .btn-x:hover {
-            background: #c0392b;
-        }
-
         .btn-circle {
             background: #f39c12;
             color: white;
@@ -96,13 +87,19 @@
             background: #e67e22;
         }
 
-        .btn-delete {
-            background: #95a5a6;
+        .btn-circle.active {
+            background: #e67e22;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
+            transform: scale(1.05);
+        }
+
+        .btn-finish {
+            background: #2ecc71;
             color: white;
         }
 
-        .btn-delete:hover {
-            background: #7f8c8d;
+        .btn-finish:hover {
+            background: #27ae60;
         }
 
         .btn-clear {
@@ -139,11 +136,6 @@
 
         .btn-sync:hover {
             background: #9b59b6;
-        }
-
-        .active {
-            box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
-            transform: scale(1.05);
         }
 
         .table-container {
@@ -216,12 +208,12 @@
         }
 
         tbody tr.status-warning {
-            background: linear-gradient(135deg, #fff9c4 0%, #f7dc6f 100%) !important;
-            border-left: 4px solid #f1c40f;
+            background: linear-gradient(135deg, #f7f1a8 0%, #d4e6a3 100%) !important;
+            border-left: 4px solid #8bc34a;
         }
 
         tbody tr.status-warning:hover {
-            background: linear-gradient(135deg, #fff5b4 0%, #f4d03f 100%) !important;
+            background: linear-gradient(135deg, #f4ed9f 0%, #cfe09a 100%) !important;
         }
 
         tbody tr.status-alert {
@@ -241,6 +233,31 @@
 
         tbody tr.status-danger:hover {
             background: linear-gradient(135deg, #ffbfbf 0%, #ff8080 100%) !important;
+        }
+
+        tbody tr.week-completed {
+            background: linear-gradient(135deg, #a8e6cf 0%, #7fcdcd 100%) !important;
+            border-left: 4px solid #00b894;
+            box-shadow: 0 2px 8px rgba(0, 184, 148, 0.2);
+        }
+
+        tbody tr.week-completed:hover {
+            background: linear-gradient(135deg, #9de1c4 0%, #74c0c0 100%) !important;
+        }
+
+        tbody tr.week-completed.status-warning {
+            background: linear-gradient(135deg, #f7f1a8 0%, #d4e6a3 100%) !important;
+            border-left: 4px solid #8bc34a;
+        }
+
+        tbody tr.week-completed.status-alert {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%) !important;
+            border-left: 4px solid #f39c12;
+        }
+
+        tbody tr.week-completed.status-danger {
+            background: linear-gradient(135deg, #ffcccc 0%, #ff9999 100%) !important;
+            border-left: 4px solid #e74c3c;
         }
 
         td {
@@ -359,9 +376,8 @@
         <div class="header">
             <h1>📚 Student Behavior Tracker</h1>
             <div class="controls">
-                <button class="btn btn-x" id="markX">✗ Mark X</button>
-                <button class="btn btn-circle" id="markCircle">● Mark O</button>
-                <button class="btn btn-delete" id="deleteMark">🗑 Delete Mark</button>
+                <button class="btn btn-circle" id="markCircle">● Circle Mode</button>
+                <button class="btn btn-finish" id="finishWeek">🏁 Finish Week</button>
                 <button class="btn btn-clear" id="clearAll">🔥 Clear All</button>
                 <button class="btn btn-save" id="saveData">💾 Save Data</button>
                 <button class="btn btn-load" id="loadData">📂 Load Data</button>
@@ -376,9 +392,13 @@
             <div style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
                 <strong>📊 Status Legend:</strong> 
                 <span style="background: #d5f4e6; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟢 Clean (0 marks)</span>
-                <span style="background: #fff9c4; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟡 Warning (1 mark)</span>
+                <span style="background: #f7f1a8; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟡 Warning (1 mark)</span>
                 <span style="background: #ffeaa7; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟠 Alert (2 marks)</span>
                 <span style="background: #ffcccc; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🔴 Danger (3+ marks)</span>
+                <span style="background: #a8e6cf; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">✅ Week Completed</span>
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: #95a5a6;">
+                <strong>💡 Usage:</strong> Click cells to add/remove X marks | Use Circle Mode for O marks | Finish Week to lock clean records
             </div>
             
             <!-- Debug info section -->
@@ -432,7 +452,8 @@
             'VIOLETA CASTAÑO'
         ];
 
-        let currentMode = null;
+        let circleMode = false;
+        let weekCompleted = false;
         let behaviorData = {};
 
         // Debug function
@@ -537,29 +558,33 @@
             const cell = event.target;
             const student = cell.dataset.student;
             const day = cell.dataset.day;
+            const currentValue = behaviorData[student][day];
 
-            if (!currentMode) return;
-
-            switch (currentMode) {
-                case 'x':
-                    behaviorData[student][day] = 'X';
-                    cell.textContent = '✗';
-                    cell.className = 'clickable-cell has-mark mark-x';
-                    break;
-                case 'circle':
-                    behaviorData[student][day] = 'O';
-                    cell.textContent = '●';
-                    cell.className = 'clickable-cell has-mark mark-circle';
-                    break;
-                case 'delete':
+            if (circleMode) {
+                // Circle mode: toggle between empty and O
+                if (currentValue === 'O') {
                     behaviorData[student][day] = '';
                     cell.textContent = '';
                     cell.className = 'clickable-cell';
-                    break;
+                } else {
+                    behaviorData[student][day] = 'O';
+                    cell.textContent = '●';
+                    cell.className = 'clickable-cell has-mark mark-circle';
+                }
+            } else {
+                // Default X mode: toggle between empty and X
+                if (currentValue === 'X') {
+                    behaviorData[student][day] = '';
+                    cell.textContent = '';
+                    cell.className = 'clickable-cell';
+                } else {
+                    behaviorData[student][day] = 'X';
+                    cell.textContent = '✗';
+                    cell.className = 'clickable-cell has-mark mark-x';
+                }
             }
 
             updateRowStatus(student);
-            clearMode();
         }
 
         // Update row status based on marks
@@ -568,47 +593,87 @@
             const marks = Object.values(behaviorData[student]).filter(mark => mark !== '');
             const markCount = marks.length;
             
+            // Remove current status classes but keep week-completed if it exists
+            const wasWeekCompleted = row.classList.contains('week-completed');
             row.classList.remove('status-clean', 'status-warning', 'status-alert', 'status-danger');
             
             if (markCount === 0) {
                 row.classList.add('status-clean');
+                // Keep week-completed status if it was there
+                if (wasWeekCompleted) {
+                    row.classList.add('week-completed');
+                }
             } else if (markCount === 1) {
                 row.classList.add('status-warning');
+                if (wasWeekCompleted) {
+                    row.classList.add('week-completed');
+                }
             } else if (markCount === 2) {
                 row.classList.add('status-alert');
+                if (wasWeekCompleted) {
+                    row.classList.add('week-completed');
+                }
             } else if (markCount >= 3) {
                 row.classList.add('status-danger');
+                if (wasWeekCompleted) {
+                    row.classList.add('week-completed');
+                }
             }
         }
 
-        // Set mode
-        function setMode(mode) {
-            currentMode = mode;
-            document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(getButtonId(mode)).classList.add('active');
-        }
-
-        // Clear mode
-        function clearMode() {
-            if (currentMode === 'delete') {
-                currentMode = null;
-                document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+        // Toggle circle mode
+        function toggleCircleMode() {
+            circleMode = !circleMode;
+            const button = document.getElementById('markCircle');
+            if (circleMode) {
+                button.classList.add('active');
+                button.textContent = '● Circle Mode (ON)';
+            } else {
+                button.classList.remove('active');
+                button.textContent = '● Circle Mode';
             }
         }
 
-        // Get button ID from mode
-        function getButtonId(mode) {
-            switch (mode) {
-                case 'x': return 'markX';
-                case 'circle': return 'markCircle';
-                case 'delete': return 'deleteMark';
-                default: return '';
+        // Finish week - mark clean students with special styling
+        function finishWeek() {
+            if (weekCompleted) {
+                if (confirm('Week is already finished. Do you want to reset week status?')) {
+                    weekCompleted = false;
+                    document.querySelectorAll('tbody tr').forEach(row => {
+                        row.classList.remove('week-completed');
+                    });
+                    document.getElementById('finishWeek').textContent = '🏁 Finish Week';
+                    showSuccess('Week status reset successfully');
+                }
+                return;
+            }
+
+            if (confirm('Mark this week as completed? This will highlight students with clean records.')) {
+                weekCompleted = true;
+                let cleanStudents = 0;
+                
+                students.forEach(student => {
+                    const marks = Object.values(behaviorData[student]).filter(mark => mark !== '');
+                    const row = document.querySelector(`[data-student="${student}"]`).closest('tr');
+                    row.classList.add('week-completed');
+                    
+                    if (marks.length === 0) {
+                        cleanStudents++;
+                    }
+                });
+                
+                const finishBtn = document.getElementById('finishWeek');
+                finishBtn.textContent = '✅ Week Completed';
+                finishBtn.style.background = '#00b894';
+                
+                showSuccess(`Week completed! ${cleanStudents} students had clean records this week.`);
             }
         }
 
         // Clear all marks
         function clearAllMarks() {
-            if (confirm('Are you sure you want to clear all marks for the week?')) {
+            if (confirm('Are you sure you want to clear all marks and week status?')) {
+                weekCompleted = false;
                 initializeBehaviorData();
                 document.querySelectorAll('.clickable-cell').forEach(cell => {
                     cell.textContent = '';
@@ -618,7 +683,9 @@
                     row.className = '';
                     row.classList.add('status-clean');
                 });
-                showSuccess('All marks cleared successfully');
+                document.getElementById('finishWeek').textContent = '🏁 Finish Week';
+                document.getElementById('finishWeek').style.background = '';
+                showSuccess('All marks and week status cleared successfully');
             }
         }
 
@@ -630,6 +697,7 @@
                 const dataToSave = {
                     week: currentWeek,
                     savedDate: new Date().toISOString(),
+                    weekCompleted: weekCompleted,
                     behaviorData: behaviorData
                 };
                 
@@ -692,7 +760,18 @@
                             
                             if (confirmLoad) {
                                 behaviorData = loadedData.behaviorData;
+                                weekCompleted = loadedData.weekCompleted || false;
                                 updateTableDisplay();
+                                
+                                // Update finish week button
+                                const finishBtn = document.getElementById('finishWeek');
+                                if (weekCompleted) {
+                                    finishBtn.textContent = '✅ Week Completed';
+                                    finishBtn.style.background = '#00b894';
+                                } else {
+                                    finishBtn.textContent = '🏁 Finish Week';
+                                    finishBtn.style.background = '';
+                                }
                                 
                                 const loadBtn = document.getElementById('loadData');
                                 const originalText = loadBtn.textContent;
@@ -816,6 +895,7 @@ Then try syncing again!
                 const dataToSync = {
                     action: 'save',
                     week: getCurrentWeek(),
+                    weekCompleted: weekCompleted,
                     behaviorData: behaviorData,
                     timestamp: new Date().toISOString()
                 };
@@ -922,7 +1002,18 @@ Then try syncing again!
                     
                     if (confirmLoad) {
                         behaviorData = result.behaviorData;
+                        weekCompleted = result.weekCompleted || false;
                         updateTableDisplay();
+                        
+                        // Update finish week button
+                        const finishBtn = document.getElementById('finishWeek');
+                        if (weekCompleted) {
+                            finishBtn.textContent = '✅ Week Completed';
+                            finishBtn.style.background = '#00b894';
+                        } else {
+                            finishBtn.textContent = '🏁 Finish Week';
+                            finishBtn.style.background = '';
+                        }
                         
                         loadBtn.textContent = '✅ Loaded!';
                         loadBtn.style.background = '#3498db';
@@ -972,9 +1063,8 @@ Then try syncing again!
         document.addEventListener('DOMContentLoaded', function() {
             debugLog('DOM loaded, setting up event listeners');
             
-            document.getElementById('markX').addEventListener('click', () => setMode('x'));
-            document.getElementById('markCircle').addEventListener('click', () => setMode('circle'));
-            document.getElementById('deleteMark').addEventListener('click', () => setMode('delete'));
+            document.getElementById('markCircle').addEventListener('click', toggleCircleMode);
+            document.getElementById('finishWeek').addEventListener('click', finishWeek);
             document.getElementById('clearAll').addEventListener('click', clearAllMarks);
             document.getElementById('saveData').addEventListener('click', saveData);
             document.getElementById('loadData').addEventListener('click', loadData);
@@ -982,13 +1072,10 @@ Then try syncing again!
             document.getElementById('loadFromSheets').addEventListener('click', loadFromSheets);
             document.getElementById('fileInput').addEventListener('change', handleFileSelect);
 
-            // Clear mode when clicking outside
+            // Clear circle mode when clicking outside
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.controls') && !e.target.closest('.clickable-cell')) {
-                    if (currentMode === 'delete') {
-                        currentMode = null;
-                        document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
-                    }
+                    // Don't auto-clear modes anymore since X is the default
                 }
             });
             
