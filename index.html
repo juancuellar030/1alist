@@ -300,6 +300,13 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
+        .mark-x svg {
+            width: 30px;
+            height: 30px;
+            fill: #e74c3c;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+
         .mark-circle {
             color: #f39c12;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
@@ -390,9 +397,9 @@
         <div class="week-info" id="weekInfo">
             Week of <span id="currentWeek"></span>
             <div style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
-                <strong>📊 Status:</strong> 
+                <strong>📊 Status Legend:</strong> 
                 <span style="background: #d5f4e6; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟢 Clean (0 marks)</span>
-                <span style="background: #f7f1a8; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟡 Oops! (1 mark)</span>
+                <span style="background: #f7f1a8; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟡 Warning (1 mark)</span>
                 <span style="background: #ffeaa7; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟠 Alert (2 marks)</span>
                 <span style="background: #ffcccc; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🔴 Danger (3+ marks)</span>
                 <span style="background: #a8e6cf; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">✅ Week Completed</span>
@@ -564,22 +571,22 @@
                 // Circle mode: toggle between empty and O
                 if (currentValue === 'O') {
                     behaviorData[student][day] = '';
-                    cell.textContent = '';
+                    cell.innerHTML = '';
                     cell.className = 'clickable-cell';
                 } else {
                     behaviorData[student][day] = 'O';
-                    cell.textContent = '●';
+                    cell.innerHTML = '●';
                     cell.className = 'clickable-cell has-mark mark-circle';
                 }
             } else {
                 // Default X mode: toggle between empty and X
                 if (currentValue === 'X') {
                     behaviorData[student][day] = '';
-                    cell.textContent = '';
+                    cell.innerHTML = '';
                     cell.className = 'clickable-cell';
                 } else {
                     behaviorData[student][day] = 'X';
-                    cell.textContent = '✗';
+                    cell.innerHTML = '<svg fill="#000000" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M18.8,16l5.5-5.5c0.8-0.8,0.8-2,0-2.8l0,0C24,7.3,23.5,7,23,7c-0.5,0-1,0.2-1.4,0.6L16,13.2l-5.5-5.5 c-0.8-0.8-2.1-0.8-2.8,0C7.3,8,7,8.5,7,9.1s0.2,1,0.6,1.4l5.5,5.5l-5.5,5.5C7.3,21.9,7,22.4,7,23c0,0.5,0.2,1,0.6,1.4 C8,24.8,8.5,25,9,25c0.5,0,1-0.2,1.4-0.6l5.5-5.5l5.5,5.5c0.8,0.8,2.1,0.8,2.8,0c0.8-0.8,0.8-2.1,0-2.8L18.8,16z"></path> </g></svg>';
                     cell.className = 'clickable-cell has-mark mark-x';
                 }
             }
@@ -683,12 +690,12 @@
                 weekCompleted = false;
                 initializeBehaviorData();
                 document.querySelectorAll('.clickable-cell').forEach(cell => {
-                    cell.textContent = '';
+                    cell.innerHTML = '';
                     cell.className = 'clickable-cell';
                 });
                 document.querySelectorAll('tbody tr').forEach(row => {
                     row.className = '';
-                    row.classList.add('status-clean');
+                    // Don't add status-clean class since week is not completed
                 });
                 document.getElementById('finishWeek').textContent = '🏁 Finish Week';
                 document.getElementById('finishWeek').style.background = '';
@@ -816,14 +823,14 @@
                 const day = cell.dataset.day;
                 const mark = behaviorData[student][day];
                 
-                cell.textContent = '';
+                cell.innerHTML = '';
                 cell.className = 'clickable-cell';
                 
                 if (mark === 'X') {
-                    cell.textContent = '✗';
+                    cell.innerHTML = '<svg fill="#000000" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M18.8,16l5.5-5.5c0.8-0.8,0.8-2,0-2.8l0,0C24,7.3,23.5,7,23,7c-0.5,0-1,0.2-1.4,0.6L16,13.2l-5.5-5.5 c-0.8-0.8-2.1-0.8-2.8,0C7.3,8,7,8.5,7,9.1s0.2,1,0.6,1.4l5.5,5.5l-5.5,5.5C7.3,21.9,7,22.4,7,23c0,0.5,0.2,1,0.6,1.4 C8,24.8,8.5,25,9,25c0.5,0,1-0.2,1.4-0.6l5.5-5.5l5.5,5.5c0.8,0.8,2.1,0.8,2.8,0c0.8-0.8,0.8-2.1,0-2.8L18.8,16z"></path> </g></svg>';
                     cell.className = 'clickable-cell has-mark mark-x';
                 } else if (mark === 'O') {
-                    cell.textContent = '●';
+                    cell.innerHTML = '●';
                     cell.className = 'clickable-cell has-mark mark-circle';
                 }
             });
@@ -1083,6 +1090,62 @@ Then try syncing again!
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.controls') && !e.target.closest('.clickable-cell')) {
                     // Don't auto-clear modes anymore since X is the default
+                }
+            });
+            
+            // Add page refresh warning
+            let hasUnsavedData = false;
+            
+            // Track when data is modified
+            const originalHandleCellClick = handleCellClick;
+            window.handleCellClick = function(event) {
+                hasUnsavedData = true;
+                return originalHandleCellClick(event);
+            };
+            
+            // Reset flag when data is saved or synced
+            const originalSaveData = saveData;
+            window.saveData = function() {
+                const result = originalSaveData();
+                hasUnsavedData = false;
+                return result;
+            };
+            
+            const originalSyncToSheets = syncToSheets;
+            window.syncToSheets = async function() {
+                const result = await originalSyncToSheets();
+                hasUnsavedData = false;
+                return result;
+            };
+            
+            // Warn before page unload
+            window.addEventListener('beforeunload', function(e) {
+                if (hasUnsavedData) {
+                    const confirmationMessage = 'You have unsaved behavior marks that will be lost if you leave this page. Make sure to save or sync your data first.';
+                    e.returnValue = confirmationMessage;
+                    return confirmationMessage;
+                }
+            });
+            
+            // Also warn on manual refresh (F5 or Ctrl+R)
+            document.addEventListener('keydown', function(e) {
+                if ((e.key === 'F5') || (e.ctrlKey && e.key === 'r') || (e.metaKey && e.key === 'r')) {
+                    if (hasUnsavedData) {
+                        e.preventDefault();
+                        const confirmRefresh = confirm(
+                            '⚠️ UNSAVED DATA WARNING ⚠️\n\n' +
+                            'You have unsaved behavior marks that will be lost if you refresh the page.\n\n' +
+                            'Recommendations:\n' +
+                            '• Click "💾 Save Data" to download a backup file\n' +
+                            '• Click "☁️ Sync to Sheets" to save to Google Sheets\n\n' +
+                            'Do you really want to refresh and lose your unsaved data?'
+                        );
+                        
+                        if (confirmRefresh) {
+                            hasUnsavedData = false;
+                            location.reload();
+                        }
+                    }
                 }
             });
             
