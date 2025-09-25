@@ -134,8 +134,35 @@
             color: white;
         }
 
-        .btn-sync:hover {
-            background: #9b59b6;
+        .week-selector-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .week-selector {
+            padding: 12px 16px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            background: white;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 150px;
+            transition: all 0.3s ease;
+        }
+
+        .week-selector:hover {
+            border-color: #2980b9;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .week-selector:focus {
+            outline: none;
+            border-color: #2980b9;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
 
         .table-container {
@@ -180,7 +207,7 @@
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
             text-align: left !important;
             min-width: 200px;
-            font-size: 19px;
+            font-size: 18px;
         }
 
         tbody tr {
@@ -298,7 +325,9 @@
         .mark-x {
             color: #e74c3c;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            font-family: 'Arial Black', sans-serif;
+            font-family: 'Arial Black', 'Helvetica Bold', 'Impact', 'Trebuchet MS', sans-serif;
+            font-weight: 900;
+            font-size: 28px;
         }
 
         .mark-circle {
@@ -382,8 +411,13 @@
                 <button class="btn btn-clear" id="clearAll">🔥 Clear All</button>
                 <button class="btn btn-save" id="saveData">💾 Save Data</button>
                 <button class="btn btn-load" id="loadData">📂 Load Data</button>
-                <button class="btn btn-sync" id="syncToSheets">☁️ Sync to Sheets</button>
-                <button class="btn btn-sync" id="loadFromSheets">📥 Load from Sheets</button>
+                <div class="week-selector-group">
+                    <select id="weekSelector" class="week-selector">
+                        <option value="current">Current Week</option>
+                    </select>
+                    <button class="btn btn-sync" id="syncToSheets">☁️ Sync to Sheets</button>
+                    <button class="btn btn-sync" id="loadFromSheets">📥 Load from Sheets</button>
+                </div>
                 <input type="file" id="fileInput" accept=".json" style="display: none;">
             </div>
         </div>
@@ -391,9 +425,9 @@
         <div class="week-info" id="weekInfo">
             Week of <span id="currentWeek"></span>
             <div style="margin-top: 10px; font-size: 14px; color: #7f8c8d;">
-                <strong>📊 Status:</strong> 
+                <strong>📊 Status Legend:</strong> 
                 <span style="background: #d5f4e6; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟢 Clean (0 marks)</span>
-                <span style="background: #f7f1a8; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟡 Oops! (1 mark)</span>
+                <span style="background: #f7f1a8; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟡 Warning (1 mark)</span>
                 <span style="background: #ffeaa7; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🟠 Alert (2 marks)</span>
                 <span style="background: #ffcccc; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">🔴 Danger (3+ marks)</span>
                 <span style="background: #a8e6cf; padding: 2px 8px; border-radius: 4px; margin: 0 5px;">✅ Week Completed</span>
@@ -411,9 +445,9 @@
                 <thead>
                     <tr>
                         <th class="student-name">Student Name</th>
-                        <th colspan="5">Monday</th>
-                        <th colspan="5">Wednesday</th>
-                        <th colspan="7">Thursday</th>
+                        <th colspan="5">Monday (5 periods)</th>
+                        <th colspan="5">Wednesday (5 periods)</th>
+                        <th colspan="7">Thursday (7 periods)</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -453,9 +487,10 @@
             'VIOLETA CASTAÑO'
         ];
 
-        let circleMode = false;
+        let currentMode = null;
         let weekCompleted = false;
         let behaviorData = {};
+        let selectedWeek = null;
 
         // Debug function
         function debugLog(message, data = null) {
@@ -517,6 +552,75 @@
             
             const options = { month: 'short', day: 'numeric' };
             return `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
+        }
+
+        // Get selected week or current week
+        function getSelectedWeek() {
+            if (selectedWeek && selectedWeek !== 'current') {
+                return selectedWeek;
+            }
+            return getCurrentWeek();
+        }
+
+        // Generate week options for the selector
+        function generateWeekOptions() {
+            const weekSelector = document.getElementById('weekSelector');
+            const currentWeek = getCurrentWeek();
+            
+            // Clear existing options except current
+            weekSelector.innerHTML = '<option value="current">Current Week (' + currentWeek + ')</option>';
+            
+            // Add previous weeks (4 weeks back)
+            for (let i = 1; i <= 4; i++) {
+                const pastDate = new Date();
+                pastDate.setDate(pastDate.getDate() - (i * 7));
+                
+                const monday = new Date(pastDate);
+                monday.setDate(pastDate.getDate() - (pastDate.getDay() === 0 ? 6 : pastDate.getDay() - 1));
+                
+                const friday = new Date(monday);
+                friday.setDate(monday.getDate() + 4);
+                
+                const options = { month: 'short', day: 'numeric' };
+                const weekString = `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
+                
+                const option = document.createElement('option');
+                option.value = weekString;
+                option.textContent = weekString;
+                weekSelector.appendChild(option);
+            }
+            
+            // Add future weeks (2 weeks forward)
+            for (let i = 1; i <= 2; i++) {
+                const futureDate = new Date();
+                futureDate.setDate(futureDate.getDate() + (i * 7));
+                
+                const monday = new Date(futureDate);
+                monday.setDate(futureDate.getDate() - (futureDate.getDay() === 0 ? 6 : futureDate.getDay() - 1));
+                
+                const friday = new Date(monday);
+                friday.setDate(monday.getDate() + 4);
+                
+                const options = { month: 'short', day: 'numeric' };
+                const weekString = `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
+                
+                const option = document.createElement('option');
+                option.value = weekString;
+                option.textContent = weekString;
+                weekSelector.appendChild(option);
+            }
+        }
+
+        // Handle week selection change
+        function handleWeekChange() {
+            const weekSelector = document.getElementById('weekSelector');
+            selectedWeek = weekSelector.value;
+            
+            // Update the current week display
+            document.getElementById('currentWeek').textContent = getSelectedWeek();
+            
+            // Update debug info
+            debugLog(`Week selection changed to: ${getSelectedWeek()}`);
         }
 
         // Create table
@@ -902,7 +1006,7 @@ Then try syncing again!
                 debugLog('Preparing data for sync');
                 const dataToSync = {
                     action: 'save',
-                    week: getCurrentWeek(),
+                    week: getSelectedWeek(),
                     weekCompleted: weekCompleted,
                     behaviorData: behaviorData,
                     timestamp: new Date().toISOString()
@@ -974,7 +1078,7 @@ Then try syncing again!
                 debugLog('Preparing load request');
                 const dataToSend = {
                     action: 'load',
-                    week: getCurrentWeek()
+                    week: getSelectedWeek()
                 };
 
                 debugLog('Sending load request to Google Sheets');
@@ -1038,7 +1142,7 @@ Then try syncing again!
                     }
                 } else {
                     if (result.error && result.error.includes('No data found')) {
-                        showError(`No data found in Google Sheets for week: ${getCurrentWeek()}`);
+                        showError(`No data found in Google Sheets for week: ${getSelectedWeek()}`);
                     } else {
                         throw new Error(result.error || 'Unknown load error');
                     }
@@ -1056,7 +1160,8 @@ Then try syncing again!
         // Initialize everything
         function initialize() {
             debugLog('Initializing Student Behavior Tracker');
-            document.getElementById('currentWeek').textContent = getCurrentWeek();
+            generateWeekOptions();
+            document.getElementById('currentWeek').textContent = getSelectedWeek();
             initializeBehaviorData();
             createTable();
             debugLog('Initialization complete');
@@ -1078,6 +1183,7 @@ Then try syncing again!
             document.getElementById('loadData').addEventListener('click', loadData);
             document.getElementById('syncToSheets').addEventListener('click', syncToSheets);
             document.getElementById('loadFromSheets').addEventListener('click', loadFromSheets);
+            document.getElementById('weekSelector').addEventListener('change', handleWeekChange);
             document.getElementById('fileInput').addEventListener('change', handleFileSelect);
 
             // Clear circle mode when clicking outside
