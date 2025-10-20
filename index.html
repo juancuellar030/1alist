@@ -660,6 +660,8 @@
 
         // Handle cell clicks
         function handleCellClick(event) {
+            hasUnsavedData = true; // Track unsaved changes
+            
             const cell = event.target;
             const student = cell.dataset.student;
             const day = cell.dataset.day;
