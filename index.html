@@ -325,7 +325,7 @@
         .mark-x {
             color: #e74c3c;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            font-family: 'Arial Black', 'Helvetica Bold', 'Impact', 'Trebuchet MS', sans-serif;
+            font-family: 'Arial Black', sans-serif;
             font-weight: 900;
             font-size: 28px;
         }
@@ -333,10 +333,6 @@
         .mark-circle {
             color: #f39c12;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .clickable-cell {
-            border-right: 1px solid #dee2e6;
         }
 
         .clickable-cell[data-day="monday5"] {
@@ -435,8 +431,6 @@
             <div style="margin-top: 8px; font-size: 12px; color: #95a5a6;">
                 <strong>💡 Usage:</strong> Click cells to add/remove X marks | Use Circle Mode for O marks | Finish Week to lock clean records
             </div>
-            
-            <!-- Debug info section -->
             <div id="debugInfo" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
         </div>
 
@@ -451,159 +445,99 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <!-- Students will be populated here -->
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // ⚠️ REPLACE THIS WITH YOUR ACTUAL GOOGLE SHEETS WEB APP URL
-        // ONLY CHANGE THIS ONE LINE BELOW:
         const SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwWRwrfiWnMvJBD6uxUwUY8iso18veUIIFfcP3zpuZzjB8f7ai3I4Q9T3pubGphPOYgJw/exec';
         
-        // Student list
         const students = [
-            'CELESTE DE LA HOZ',
-            'DAVID SANTIAGO',
-            'DULCE XCARET',
-            'EMILIO VARGAS',
-            'EMMANUEL M.',
-            'HELENA FRANCO',
-            'IKER JULIÁN',
-            'JERÓNIMO R.',
-            'JOSÉ DANIEL',
-            'JUAN DAVID G.',
-            'JUAN PABLO',
-            'LUNA CAROLINA',
-            'MARIA LUISA',
-            'MARIA V. HURTADO',
-            'MARIA V. PEÑA',
-            'MARTÍN TOVAR',
-            'SAMUEL MELO',
-            'SARA MARÍA',
-            'SARAY MORALES',
-            'VICTORIA CADENA',
-            'VIOLETA CASTAÑO'
+            'CELESTE DE LA HOZ', 'DAVID SANTIAGO', 'DULCE XCARET', 'EMILIO VARGAS', 'EMMANUEL M.',
+            'HELENA FRANCO', 'IKER JULIÁN', 'JERÓNIMO R.', 'JOSÉ DANIEL', 'JUAN DAVID G.',
+            'JUAN PABLO', 'LUNA CAROLINA', 'MARIA LUISA', 'MARIA V. HURTADO', 'MARIA V. PEÑA',
+            'MARTÍN TOVAR', 'SAMUEL MELO', 'SARA MARÍA', 'SARAY MORALES', 'VICTORIA CADENA', 'VIOLETA CASTAÑO'
         ];
 
-        let currentMode = null;
+        let circleMode = false;
         let weekCompleted = false;
         let behaviorData = {};
         let selectedWeek = null;
+        let hasUnsavedData = false;
 
-        // Debug function
         function debugLog(message, data = null) {
             console.log('[DEBUG]', message, data);
             const debugDiv = document.getElementById('debugInfo');
             const timestamp = new Date().toLocaleTimeString();
-            debugDiv.innerHTML = `<strong>${timestamp}:</strong> ${message}${data ? ' - Check console for details' : ''}`;
+            debugDiv.innerHTML = `<strong>${timestamp}:</strong> ${message}${data ? ' - Check console' : ''}`;
         }
 
-        // Show error message
         function showError(message, error = null) {
             console.error('[ERROR]', message, error);
             const debugDiv = document.getElementById('debugInfo');
             debugDiv.innerHTML = `<div class="error-message"><strong>Error:</strong> ${message}${error ? '<br>Details: ' + error.message : ''}</div>`;
         }
 
-        // Show success message
         function showSuccess(message) {
             const debugDiv = document.getElementById('debugInfo');
             debugDiv.innerHTML = `<div class="success-message"><strong>Success:</strong> ${message}</div>`;
-            setTimeout(() => {
-                debugDiv.innerHTML = '';
-            }, 5000);
+            setTimeout(() => { debugDiv.innerHTML = ''; }, 5000);
         }
 
-        // Initialize behavior data structure
         function initializeBehaviorData() {
             students.forEach(student => {
                 behaviorData[student] = {
-                    monday1: '',
-                    monday2: '',
-                    monday3: '',
-                    monday4: '',
-                    monday5: '',
-                    wednesday1: '',
-                    wednesday2: '',
-                    wednesday3: '',
-                    wednesday4: '',
-                    wednesday5: '',
-                    thursday1: '',
-                    thursday2: '',
-                    thursday3: '',
-                    thursday4: '',
-                    thursday5: '',
-                    thursday6: '',
-                    thursday7: ''
+                    monday1: '', monday2: '', monday3: '', monday4: '', monday5: '',
+                    wednesday1: '', wednesday2: '', wednesday3: '', wednesday4: '', wednesday5: '',
+                    thursday1: '', thursday2: '', thursday3: '', thursday4: '', thursday5: '', thursday6: '', thursday7: ''
                 };
             });
         }
 
-        // Get current week date range
         function getCurrentWeek() {
             const today = new Date();
             const monday = new Date(today);
             monday.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-            
             const friday = new Date(monday);
             friday.setDate(monday.getDate() + 4);
-            
             const options = { month: 'short', day: 'numeric' };
             return `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
         }
 
-        // Get selected week or current week
         function getSelectedWeek() {
-            if (selectedWeek && selectedWeek !== 'current') {
-                return selectedWeek;
-            }
-            return getCurrentWeek();
+            return (selectedWeek && selectedWeek !== 'current') ? selectedWeek : getCurrentWeek();
         }
 
-        // Generate week options for the selector
         function generateWeekOptions() {
             const weekSelector = document.getElementById('weekSelector');
             const currentWeek = getCurrentWeek();
+            weekSelector.innerHTML = `<option value="current">Current Week (${currentWeek})</option>`;
             
-            // Clear existing options except current
-            weekSelector.innerHTML = '<option value="current">Current Week (' + currentWeek + ')</option>';
-            
-            // Add previous weeks (4 weeks back)
             for (let i = 1; i <= 4; i++) {
                 const pastDate = new Date();
                 pastDate.setDate(pastDate.getDate() - (i * 7));
-                
                 const monday = new Date(pastDate);
                 monday.setDate(pastDate.getDate() - (pastDate.getDay() === 0 ? 6 : pastDate.getDay() - 1));
-                
                 const friday = new Date(monday);
                 friday.setDate(monday.getDate() + 4);
-                
                 const options = { month: 'short', day: 'numeric' };
                 const weekString = `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
-                
                 const option = document.createElement('option');
                 option.value = weekString;
                 option.textContent = weekString;
                 weekSelector.appendChild(option);
             }
             
-            // Add future weeks (2 weeks forward)
             for (let i = 1; i <= 2; i++) {
                 const futureDate = new Date();
                 futureDate.setDate(futureDate.getDate() + (i * 7));
-                
                 const monday = new Date(futureDate);
                 monday.setDate(futureDate.getDate() - (futureDate.getDay() === 0 ? 6 : futureDate.getDay() - 1));
-                
                 const friday = new Date(monday);
                 friday.setDate(monday.getDate() + 4);
-                
                 const options = { month: 'short', day: 'numeric' };
                 const weekString = `${monday.toLocaleDateString('en-US', options)} - ${friday.toLocaleDateString('en-US', options)}`;
-                
                 const option = document.createElement('option');
                 option.value = weekString;
                 option.textContent = weekString;
@@ -611,19 +545,12 @@
             }
         }
 
-        // Handle week selection change
         function handleWeekChange() {
-            const weekSelector = document.getElementById('weekSelector');
-            selectedWeek = weekSelector.value;
-            
-            // Update the current week display
+            selectedWeek = document.getElementById('weekSelector').value;
             document.getElementById('currentWeek').textContent = getSelectedWeek();
-            
-            // Update debug info
-            debugLog(`Week selection changed to: ${getSelectedWeek()}`);
+            debugLog(`Week changed to: ${getSelectedWeek()}`);
         }
 
-        // Create table
         function createTable() {
             const tableBody = document.getElementById('tableBody');
             tableBody.innerHTML = '';
@@ -642,13 +569,13 @@
                     <td class="clickable-cell" data-student="${student}" data-day="wednesday3"></td>
                     <td class="clickable-cell" data-student="${student}" data-day="wednesday4"></td>
                     <td class="clickable-cell" data-student="${student}" data-day="wednesday5"></td>
-                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday1"></td>
-                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday2"></td>
-                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday3"></td>
-                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday4"></td>
-                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday5"></td>
-                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday6"></td>
-                    <td class="clickable-cell thursday-cell" data-student="${student}" data-day="thursday7"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="thursday1"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="thursday2"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="thursday3"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="thursday4"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="thursday5"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="thursday6"></td>
+                    <td class="clickable-cell" data-student="${student}" data-day="thursday7"></td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -658,17 +585,14 @@
             });
         }
 
-        // Handle cell clicks
         function handleCellClick(event) {
-            hasUnsavedData = true; // Track unsaved changes
-            
+            hasUnsavedData = true;
             const cell = event.target;
             const student = cell.dataset.student;
             const day = cell.dataset.day;
             const currentValue = behaviorData[student][day];
 
             if (circleMode) {
-                // Circle mode: toggle between empty and O
                 if (currentValue === 'O') {
                     behaviorData[student][day] = '';
                     cell.textContent = '';
@@ -679,7 +603,6 @@
                     cell.className = 'clickable-cell has-mark mark-circle';
                 }
             } else {
-                // Default X mode: toggle between empty and X
                 if (currentValue === 'X') {
                     behaviorData[student][day] = '';
                     cell.textContent = '';
@@ -690,45 +613,30 @@
                     cell.className = 'clickable-cell has-mark mark-x';
                 }
             }
-
             updateRowStatus(student);
         }
 
-        // Update row status based on marks
         function updateRowStatus(student) {
             const row = document.querySelector(`[data-student="${student}"]`).closest('tr');
             const marks = Object.values(behaviorData[student]).filter(mark => mark !== '');
             const markCount = marks.length;
-            
-            // Remove current status classes but keep week-completed if it exists
             const wasWeekCompleted = row.classList.contains('week-completed');
             row.classList.remove('status-clean', 'status-warning', 'status-alert', 'status-danger');
             
             if (markCount === 0) {
-                // Only add green styling if week is completed
-                if (wasWeekCompleted) {
-                    row.classList.add('status-clean', 'week-completed');
-                }
-                // If week not completed, don't add any special styling for clean records
+                if (wasWeekCompleted) row.classList.add('status-clean', 'week-completed');
             } else if (markCount === 1) {
                 row.classList.add('status-warning');
-                if (wasWeekCompleted) {
-                    row.classList.add('week-completed');
-                }
+                if (wasWeekCompleted) row.classList.add('week-completed');
             } else if (markCount === 2) {
                 row.classList.add('status-alert');
-                if (wasWeekCompleted) {
-                    row.classList.add('week-completed');
-                }
-            } else if (markCount >= 3) {
+                if (wasWeekCompleted) row.classList.add('week-completed');
+            } else {
                 row.classList.add('status-danger');
-                if (wasWeekCompleted) {
-                    row.classList.add('week-completed');
-                }
+                if (wasWeekCompleted) row.classList.add('week-completed');
             }
         }
 
-        // Toggle circle mode
         function toggleCircleMode() {
             circleMode = !circleMode;
             const button = document.getElementById('markCircle');
@@ -741,86 +649,65 @@
             }
         }
 
-        // Finish week - mark clean students with special styling
         function finishWeek() {
             if (weekCompleted) {
-                if (confirm('Week is already finished. Do you want to reset week status?')) {
+                if (confirm('Week is already finished. Reset week status?')) {
                     weekCompleted = false;
-                    document.querySelectorAll('tbody tr').forEach(row => {
-                        row.classList.remove('week-completed');
-                    });
-                    // Re-update all rows to remove green styling from clean records
-                    students.forEach(student => {
-                        updateRowStatus(student);
-                    });
+                    document.querySelectorAll('tbody tr').forEach(row => row.classList.remove('week-completed'));
+                    students.forEach(student => updateRowStatus(student));
                     document.getElementById('finishWeek').textContent = '🏁 Finish Week';
-                    showSuccess('Week status reset successfully');
+                    document.getElementById('finishWeek').style.background = '';
+                    showSuccess('Week status reset');
                 }
                 return;
             }
 
-            if (confirm('Mark this week as completed? This will highlight students with clean records.')) {
+            if (confirm('Mark this week as completed?')) {
                 weekCompleted = true;
                 let cleanStudents = 0;
-                
                 students.forEach(student => {
                     const marks = Object.values(behaviorData[student]).filter(mark => mark !== '');
                     const row = document.querySelector(`[data-student="${student}"]`).closest('tr');
                     row.classList.add('week-completed');
-                    
-                    // Now apply the proper status styling including green for clean records
                     updateRowStatus(student);
-                    
-                    if (marks.length === 0) {
-                        cleanStudents++;
-                    }
+                    if (marks.length === 0) cleanStudents++;
                 });
-                
                 const finishBtn = document.getElementById('finishWeek');
                 finishBtn.textContent = '✅ Week Completed';
                 finishBtn.style.background = '#00b894';
-                
-                showSuccess(`Week completed! ${cleanStudents} students had clean records this week.`);
+                showSuccess(`Week completed! ${cleanStudents} students had clean records.`);
             }
         }
 
-        // Clear all marks
         function clearAllMarks() {
-            if (confirm('Are you sure you want to clear all marks and week status?')) {
+            if (confirm('Clear all marks and week status?')) {
                 weekCompleted = false;
                 initializeBehaviorData();
                 document.querySelectorAll('.clickable-cell').forEach(cell => {
                     cell.textContent = '';
                     cell.className = 'clickable-cell';
                 });
-                document.querySelectorAll('tbody tr').forEach(row => {
-                    row.className = '';
-                    // Don't add status-clean class since week is not completed
-                });
+                document.querySelectorAll('tbody tr').forEach(row => row.className = '');
                 document.getElementById('finishWeek').textContent = '🏁 Finish Week';
                 document.getElementById('finishWeek').style.background = '';
-                showSuccess('All marks and week status cleared successfully');
+                showSuccess('All marks cleared');
             }
         }
 
-        // Save data to JSON file
         function saveData() {
-            debugLog('Save button clicked');
+            hasUnsavedData = false;
             try {
-                const currentWeek = getCurrentWeek();
                 const dataToSave = {
-                    week: currentWeek,
+                    week: getCurrentWeek(),
                     savedDate: new Date().toISOString(),
                     weekCompleted: weekCompleted,
                     behaviorData: behaviorData
                 };
-                
                 const dataStr = JSON.stringify(dataToSave, null, 2);
                 const dataBlob = new Blob([dataStr], {type: 'application/json'});
-                
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(dataBlob);
-                link.download = `student-behavior-${currentWeek.replace(/[^a-zA-Z0-9]/g, '-')}.json`;
+                link.download = `student-behavior-${getCurrentWeek().replace(/[^a-zA-Z0-9]/g, '-')}.json`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -833,169 +720,103 @@
                     saveBtn.textContent = originalText;
                     saveBtn.style.background = '';
                 }, 2000);
-                
-                showSuccess('Data saved to file successfully');
+                showSuccess('Data saved to file');
             } catch (error) {
-                showError('Error saving data to file', error);
+                showError('Error saving data', error);
             }
         }
 
-        // Load data from JSON file
         function loadData() {
-            debugLog('Load button clicked');
-            try {
-                const fileInput = document.getElementById('fileInput');
-                fileInput.click();
-            } catch (error) {
-                showError('Error opening file picker', error);
-            }
+            document.getElementById('fileInput').click();
         }
 
-        // Handle file selection
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            debugLog('File selected', {name: file.name, size: file.size});
-            
-            try {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const loadedData = JSON.parse(e.target.result);
-                        debugLog('File parsed successfully', loadedData);
-                        
-                        if (loadedData.behaviorData && loadedData.week) {
-                            const confirmLoad = confirm(
-                                `Load data from ${loadedData.week}?\n` +
-                                `Saved on: ${new Date(loadedData.savedDate).toLocaleDateString()}\n\n` +
-                                'This will replace current marks.'
-                            );
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+                    if (loadedData.behaviorData && loadedData.week) {
+                        if (confirm(`Load data from ${loadedData.week}?\nSaved: ${new Date(loadedData.savedDate).toLocaleDateString()}\n\nThis will replace current marks.`)) {
+                            behaviorData = loadedData.behaviorData;
+                            weekCompleted = loadedData.weekCompleted || false;
+                            updateTableDisplay();
                             
-                            if (confirmLoad) {
-                                behaviorData = loadedData.behaviorData;
-                                weekCompleted = loadedData.weekCompleted || false;
-                                updateTableDisplay();
-                                
-                                // Update finish week button
-                                const finishBtn = document.getElementById('finishWeek');
-                                if (weekCompleted) {
-                                    finishBtn.textContent = '✅ Week Completed';
-                                    finishBtn.style.background = '#00b894';
-                                } else {
-                                    finishBtn.textContent = '🏁 Finish Week';
-                                    finishBtn.style.background = '';
-                                }
-                                
-                                const loadBtn = document.getElementById('loadData');
-                                const originalText = loadBtn.textContent;
-                                loadBtn.textContent = '✅ Loaded!';
-                                loadBtn.style.background = '#3498db';
-                                setTimeout(() => {
-                                    loadBtn.textContent = originalText;
-                                    loadBtn.style.background = '';
-                                }, 2000);
-                                
-                                showSuccess(`Data loaded from ${loadedData.week}`);
+                            const finishBtn = document.getElementById('finishWeek');
+                            if (weekCompleted) {
+                                finishBtn.textContent = '✅ Week Completed';
+                                finishBtn.style.background = '#00b894';
+                            } else {
+                                finishBtn.textContent = '🏁 Finish Week';
+                                finishBtn.style.background = '';
                             }
-                        } else {
-                            showError('Invalid file format. Please select a valid behavior data file.');
+                            
+                            const loadBtn = document.getElementById('loadData');
+                            const originalText = loadBtn.textContent;
+                            loadBtn.textContent = '✅ Loaded!';
+                            loadBtn.style.background = '#3498db';
+                            setTimeout(() => {
+                                loadBtn.textContent = originalText;
+                                loadBtn.style.background = '';
+                            }, 2000);
+                            showSuccess(`Data loaded from ${loadedData.week}`);
                         }
-                    } catch (parseError) {
-                        showError('Error parsing file. Please make sure it\'s a valid JSON file.', parseError);
+                    } else {
+                        showError('Invalid file format');
                     }
-                };
-                reader.onerror = function(error) {
-                    showError('Error reading file', error);
-                };
-                reader.readAsText(file);
-            } catch (error) {
-                showError('Error processing file', error);
-            }
-            
+                } catch (error) {
+                    showError('Error parsing file', error);
+                }
+            };
+            reader.readAsText(file);
             event.target.value = '';
         }
 
-        // Update table display with loaded data
         function updateTableDisplay() {
             document.querySelectorAll('.clickable-cell').forEach(cell => {
                 const student = cell.dataset.student;
                 const day = cell.dataset.day;
                 const mark = behaviorData[student][day];
                 
-                cell.innerHTML = '';
+                cell.textContent = '';
                 cell.className = 'clickable-cell';
                 
                 if (mark === 'X') {
-                    cell.innerHTML = '<svg fill="#000000" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M18.8,16l5.5-5.5c0.8-0.8,0.8-2,0-2.8l0,0C24,7.3,23.5,7,23,7c-0.5,0-1,0.2-1.4,0.6L16,13.2l-5.5-5.5 c-0.8-0.8-2.1-0.8-2.8,0C7.3,8,7,8.5,7,9.1s0.2,1,0.6,1.4l5.5,5.5l-5.5,5.5C7.3,21.9,7,22.4,7,23c0,0.5,0.2,1,0.6,1.4 C8,24.8,8.5,25,9,25c0.5,0,1-0.2,1.4-0.6l5.5-5.5l5.5,5.5c0.8,0.8,2.1,0.8,2.8,0c0.8-0.8,0.8-2.1,0-2.8L18.8,16z"></path> </g></svg>';
+                    cell.textContent = '✗';
                     cell.className = 'clickable-cell has-mark mark-x';
                 } else if (mark === 'O') {
-                    cell.innerHTML = '●';
+                    cell.textContent = '●';
                     cell.className = 'clickable-cell has-mark mark-circle';
                 }
             });
-            
-            students.forEach(student => {
-                updateRowStatus(student);
-            });
+            students.forEach(student => updateRowStatus(student));
         }
 
-        // Test Google Sheets connection
         async function testSheetsConnection() {
             debugLog('Testing Google Sheets connection...');
             try {
-                const response = await fetch(SHEETS_WEB_APP_URL, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                debugLog('Test response received', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: response.headers
-                });
-                
+                const response = await fetch(SHEETS_WEB_APP_URL, { method: 'GET' });
                 const result = await response.json();
-                debugLog('Test result', result);
-                
                 if (result.success) {
-                    showSuccess('Google Sheets connection test successful!');
+                    showSuccess('Google Sheets connection successful!');
                     return true;
                 } else {
-                    showError('Google Sheets connection test failed', new Error(result.message || 'Unknown error'));
+                    showError('Connection test failed', new Error(result.message));
                     return false;
                 }
             } catch (error) {
-                showError('Google Sheets connection test failed', error);
-                debugLog('Connection test error details', {
-                    message: error.message,
-                    stack: error.stack,
-                    url: SHEETS_WEB_APP_URL
-                });
+                showError('Connection test failed', error);
                 return false;
             }
         }
 
-        // Sync data to Google Sheets
         async function syncToSheets() {
-            debugLog('Sync to Sheets button clicked');
+            debugLog('Syncing to Sheets...');
             
             if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL.includes('YOUR_WEB_APP_URL_HERE')) {
-                showError('Please configure your Google Sheets Web App URL first! Check the console for setup instructions.');
-                console.log(`
-🔧 GOOGLE SHEETS SETUP REQUIRED:
-
-1. Open Google Apps Script (script.google.com)
-2. Create a new project
-3. Paste the Google Apps Script code provided
-4. Deploy as Web App with these settings:
-   - Execute as: Me
-   - Who has access: Anyone
-5. Copy the Web App URL
-6. Replace 'YOUR_WEB_APP_URL_HERE' in this file with your actual URL
-
-Then try syncing again!
-                `);
+                showError('Please configure your Google Sheets Web App URL first!');
                 return;
             }
 
@@ -1005,7 +826,6 @@ Then try syncing again!
                 syncBtn.textContent = '⏳ Syncing...';
                 syncBtn.disabled = true;
 
-                debugLog('Preparing data for sync');
                 const dataToSync = {
                     action: 'save',
                     week: getSelectedWeek(),
@@ -1014,24 +834,11 @@ Then try syncing again!
                     timestamp: new Date().toISOString()
                 };
 
-                debugLog('Sending request to Google Sheets', {
-                    url: SHEETS_WEB_APP_URL,
-                    dataSize: JSON.stringify(dataToSync).length
-                });
-
-               const response = await fetch(SHEETS_WEB_APP_URL, {
+                const response = await fetch(SHEETS_WEB_APP_URL, {
                     method: 'POST',
-                    redirect: 'follow', // Important for handling Google's redirect
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8', // Changed to avoid pre-flight
-                    },
-                    body: JSON.stringify(dataToSync) // The body is still a JSON string
-                });
-
-                debugLog('Response received', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    ok: response.ok
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(dataToSync)
                 });
 
                 if (!response.ok) {
@@ -1039,12 +846,12 @@ Then try syncing again!
                 }
 
                 const result = await response.json();
-                debugLog('Sync result', result);
                 
                 if (result.success) {
+                    hasUnsavedData = false;
                     syncBtn.textContent = '✅ Synced!';
                     syncBtn.style.background = '#27ae60';
-                    showSuccess(`Data synced successfully! ${result.studentsUpdated} students updated.`);
+                    showSuccess(`Data synced! ${result.studentsUpdated} students updated.`);
                     
                     setTimeout(() => {
                         syncBtn.textContent = originalText;
@@ -1062,9 +869,8 @@ Then try syncing again!
             }
         }
 
-        // Load data from Google Sheets
         async function loadFromSheets() {
-            debugLog('Load from Sheets button clicked');
+            debugLog('Loading from Sheets...');
             
             if (!SHEETS_WEB_APP_URL || SHEETS_WEB_APP_URL.includes('YOUR_WEB_APP_URL_HERE')) {
                 showError('Please configure your Google Sheets Web App URL first!');
@@ -1077,27 +883,16 @@ Then try syncing again!
                 loadBtn.textContent = '⏳ Loading...';
                 loadBtn.disabled = true;
 
-                debugLog('Preparing load request');
                 const dataToSend = {
                     action: 'load',
                     week: getSelectedWeek()
                 };
 
-                debugLog('Sending load request to Google Sheets');
-
                 const response = await fetch(SHEETS_WEB_APP_URL, {
                     method: 'POST',
-                    redirect: 'follow', // Important for handling Google's redirect
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8', // Changed to avoid pre-flight
-                    },
-                    body: JSON.stringify(dataToSend) // The body is still a JSON string
-                });
-
-                debugLog('Load response received', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    ok: response.ok
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(dataToSend)
                 });
 
                 if (!response.ok) {
@@ -1105,21 +900,13 @@ Then try syncing again!
                 }
 
                 const result = await response.json();
-                debugLog('Load result', result);
                 
                 if (result.success) {
-                    const confirmLoad = confirm(
-                        `Load data from Google Sheets for ${result.week}?\n` +
-                        `Found ${result.studentsLoaded} students.\n\n` +
-                        'This will replace current marks.'
-                    );
-                    
-                    if (confirmLoad) {
+                    if (confirm(`Load data from Google Sheets for ${result.week}?\nFound ${result.studentsLoaded} students.\n\nThis will replace current marks.`)) {
                         behaviorData = result.behaviorData;
                         weekCompleted = result.weekCompleted || false;
                         updateTableDisplay();
                         
-                        // Update finish week button
                         const finishBtn = document.getElementById('finishWeek');
                         if (weekCompleted) {
                             finishBtn.textContent = '✅ Week Completed';
@@ -1131,7 +918,7 @@ Then try syncing again!
                         
                         loadBtn.textContent = '✅ Loaded!';
                         loadBtn.style.background = '#3498db';
-                        showSuccess(`Data loaded successfully! ${result.studentsLoaded} students loaded.`);
+                        showSuccess(`Data loaded! ${result.studentsLoaded} students loaded.`);
                         
                         setTimeout(() => {
                             loadBtn.textContent = originalText;
@@ -1159,7 +946,6 @@ Then try syncing again!
             }
         }
 
-        // Initialize everything
         function initialize() {
             debugLog('Initializing Student Behavior Tracker');
             generateWeekOptions();
@@ -1168,13 +954,11 @@ Then try syncing again!
             createTable();
             debugLog('Initialization complete');
             
-            // Test connection on load if URL is configured
             if (SHEETS_WEB_APP_URL && !SHEETS_WEB_APP_URL.includes('YOUR_WEB_APP_URL_HERE')) {
                 setTimeout(testSheetsConnection, 1000);
             }
         }
 
-        // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
             debugLog('DOM loaded, setting up event listeners');
             
@@ -1188,66 +972,11 @@ Then try syncing again!
             document.getElementById('weekSelector').addEventListener('change', handleWeekChange);
             document.getElementById('fileInput').addEventListener('change', handleFileSelect);
 
-            // Clear circle mode when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.controls') && !e.target.closest('.clickable-cell')) {
-                    // Don't auto-clear modes anymore since X is the default
-                }
-            });
-            
-            // Add page refresh warning
-            let hasUnsavedData = false;
-            
-            // Track when data is modified
-            const originalHandleCellClick = handleCellClick;
-            window.handleCellClick = function(event) {
-                hasUnsavedData = true;
-                return originalHandleCellClick(event);
-            };
-            
-            // Reset flag when data is saved or synced
-            const originalSaveData = saveData;
-            window.saveData = function() {
-                const result = originalSaveData();
-                hasUnsavedData = false;
-                return result;
-            };
-            
-            const originalSyncToSheets = syncToSheets;
-            window.syncToSheets = async function() {
-                const result = await originalSyncToSheets();
-                hasUnsavedData = false;
-                return result;
-            };
-            
-            // Warn before page unload
             window.addEventListener('beforeunload', function(e) {
                 if (hasUnsavedData) {
-                    const confirmationMessage = 'You have unsaved behavior marks that will be lost if you leave this page. Make sure to save or sync your data first.';
-                    e.returnValue = confirmationMessage;
-                    return confirmationMessage;
-                }
-            });
-            
-            // Also warn on manual refresh (F5 or Ctrl+R)
-            document.addEventListener('keydown', function(e) {
-                if ((e.key === 'F5') || (e.ctrlKey && e.key === 'r') || (e.metaKey && e.key === 'r')) {
-                    if (hasUnsavedData) {
-                        e.preventDefault();
-                        const confirmRefresh = confirm(
-                            '⚠️ UNSAVED DATA WARNING ⚠️\n\n' +
-                            'You have unsaved behavior marks that will be lost if you refresh the page.\n\n' +
-                            'Recommendations:\n' +
-                            '• Click "💾 Save Data" to download a backup file\n' +
-                            '• Click "☁️ Sync to Sheets" to save to Google Sheets\n\n' +
-                            'Do you really want to refresh and lose your unsaved data?'
-                        );
-                        
-                        if (confirmRefresh) {
-                            hasUnsavedData = false;
-                            location.reload();
-                        }
-                    }
+                    const msg = 'You have unsaved behavior marks that will be lost. Save or sync your data first.';
+                    e.returnValue = msg;
+                    return msg;
                 }
             });
             
